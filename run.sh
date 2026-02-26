@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ==========================================
-# DRIFTS - Docker Management
+# MCR - Docker Management
 # ==========================================
 
 set -e
 
-IMAGE_NAME="drifts:latest"
-CONTAINER_NAME="drifts-container"
+IMAGE_NAME="mcr:latest"
+CONTAINER_NAME="mcr-container"
 
 # Parse command
 CMD="${1:-start}"
@@ -15,7 +15,7 @@ case "$CMD" in
     start)
         echo ""
         echo "=========================================="
-        echo "  DRIFTS - Starting Container"
+        echo "  MCR - Starting Container"
         echo "=========================================="
         echo ""
 
@@ -98,7 +98,7 @@ case "$CMD" in
     rebuild)
         echo ""
         echo "=========================================="
-        echo "  DRIFTS - Rebuilding Image"
+        echo "  MCR - Rebuilding Image"
         echo "=========================================="
         echo ""
         docker build --no-cache -t "$IMAGE_NAME" .
@@ -113,7 +113,7 @@ case "$CMD" in
     clean-rebuild)
         echo ""
         echo "=========================================="
-        echo "  DRIFTS - Clean Rebuild"
+        echo "  MCR - Clean Rebuild"
         echo "=========================================="
         echo ""
         echo "Removing container..."

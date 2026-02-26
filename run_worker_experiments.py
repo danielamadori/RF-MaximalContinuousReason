@@ -191,7 +191,7 @@ def main():
 
         # Construct Command
         cmd = [
-            sys.executable, 'run_experiments_drifts.py',
+            sys.executable, 'run_experiments.py',
             '--init-type', args.init_type,
             '--dataset', args.dataset_name,
             '--class-label', str(cls),

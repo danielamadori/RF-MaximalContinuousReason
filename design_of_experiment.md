@@ -3,7 +3,7 @@
 ## Objective
 To address the reviewer's critique regarding:
 1.  **Baselines**: Quantify the performance improvement of the distributed architecture compared to a non-distributed (single-core) baseline.
-2.  **Correctness**: Demonstrate that DRIFTS explanations are formally correct (valid AXps) compared to formal definitions (e.g., SAT-based AXp).
+2.  **Correctness**: Demonstrate that MCR explanations are formally correct (valid AXps) compared to formal definitions (e.g., SAT-based AXp).
 
 ## 1. Datasets
 The experimental evaluation uses **31 datasets** from PMLB (wpbc not available).
@@ -57,7 +57,7 @@ The experiment suite is organized in a hierarchical structure with a **NEW** org
 run_all_experiments.py              # Top-level: Iterates all datasets
     └── run_dataset_experiments.py      # Per-dataset: Iterates worker counts [32,16,8,4,2,1]
             └── run_worker_experiments.py   # Per-worker-count: Iterates all classes
-                    └── run_experiments_drifts.py  # Per-class: Runs with fixed worker count
+                    └── run_experiments.py  # Per-class: Runs with fixed worker count
                             └── init_*.py + launch_workers.py  # Core execution
 ```
 
@@ -144,14 +144,14 @@ python run_worker_experiments.py ann-thyroid \
 | `--samples-per-class` | int | No | -1 | Number of samples per class (-1 = all) |
 | `--one-solution` | flag | No | False | Stop after finding one solution |
 | `--preserve` | flag | No | **True** | Preserve AR (DB5) across classes |
-| Additional args | - | No | - | Passed to `run_experiments_drifts.py` (e.g., `--dataset-timeout`, `--sample-timeout`) |
+| Additional args | - | No | - | Passed to `run_experiments.py` (e.g., `--dataset-timeout`, `--sample-timeout`) |
 
 **Behavior:**
 1. Retrieves all classes for the dataset
 2. Iterates through classes in sorted order
 3. For each class:
    - If `--preserve=True` (default), passes `--preserve-ar` flag to preserve AR from previous classes
-   - Calls `run_experiments_drifts.py` with `--num-workers` and `--preserve-ar` flags
+   - Calls `run_experiments.py` with `--num-workers` and `--preserve-ar` flags
 4. Logs failures to `worker_orchestrator_failures.txt`
 
 **AR Preservation Logic:**
@@ -160,12 +160,12 @@ python run_worker_experiments.py ann-thyroid \
 
 ---
 
-### 2.4 `run_experiments_drifts.py` (MODIFIED)
+### 2.4 `run_experiments.py` (MODIFIED)
 **Purpose:** Core experiment runner. For a given dataset/class, runs experiments with a specific worker count.
 
 **Usage (Fixed Worker Mode):**
 ```bash
-python run_experiments_drifts.py \
+python run_experiments.py \
     --init-type baseline \
     --dataset ann-thyroid \
     --class-label 0 \
@@ -176,7 +176,7 @@ python run_experiments_drifts.py \
 
 **Usage (Scalability Mode):**
 ```bash
-python run_experiments_drifts.py \
+python run_experiments.py \
     --init-type baseline \
     --dataset ann-thyroid \
     --class-label 0 \
@@ -287,7 +287,7 @@ baseline/
 - Automatic interaction with `run_all_experiments.py` for full suite execution.
 - Validation of CSV, samples, and classifier files.
 - Smart label normalization to prevent type mismatches (float-string vs int-string).
-- Compatible with standard experiment workflow (`run_experiments_drifts.py`).
+- Compatible with standard experiment workflow (`run_experiments.py`).
 
 ---
 

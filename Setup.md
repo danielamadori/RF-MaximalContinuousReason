@@ -20,14 +20,14 @@
 After cloning the repository, you will find:
 
 ```
-drifts/
+MCR/
 ├── baseline/
 │   ├── Archive.zip              (COMMITTED - contains JSON models)
 │   ├── resources.tar.gz         (COMMITTED - contains datasets)
 │   ├── Classifiers-100-converted/   (EMPTY or NON-EXISTENT - to be populated)
 │   └── resources/               (EMPTY or NON-EXISTENT - to be populated)
 ├── requirements.txt
-├── run_experiments_drifts.py
+├── run_experiments.py
 ├── init_baseline.py
 └── ...
 ```
@@ -143,7 +143,7 @@ Connected to Redis DB 0 (DATA) on port 6379
 ### Run complete experiment
 
 ```bash
-python run_experiments_drifts.py --init-type baseline --dataset sonar --class-label "1" --dataset-timeout 300 --max-workers 3
+python run_experiments.py --init-type baseline --dataset sonar --class-label "1" --dataset-timeout 300 --max-workers 3
 ```
 
 ## Available Baseline Datasets
@@ -188,7 +188,7 @@ Only datasets with JSON models in `Classifiers-100-converted/` can be used (35 o
 ## Standard Experiment Command
 
 ```bash
-python run_experiments_drifts.py --init-type baseline --dataset DATASET_NAME --class-label "CLASS" --dataset-timeout 300 --max-workers 5
+python run_experiments.py --init-type baseline --dataset DATASET_NAME --class-label "CLASS" --dataset-timeout 300 --max-workers 5
 ```
 
 Replace:
@@ -322,7 +322,7 @@ redis-server --protected-mode no
 4. If model does not exist, raises FileNotFoundError
 5. Populates Redis with forest, samples, and endpoints
 
-### Experiment Execution (run_experiments_drifts.py)
+### Experiment Execution (run_experiments.py)
 
 1. Calls init_baseline.py with specified dataset and class
 2. Creates snapshot of initial Redis state

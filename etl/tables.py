@@ -29,7 +29,7 @@ except Exception:
 		pass
 
 try:
-	from etl.drifts_results import (
+	from etl.mcr_results import (
 		compute_counts_from_results,
 		load_analyzed_df,
 		cast_dataset_str,
@@ -44,7 +44,7 @@ except Exception as exc:
 	DISPLAY_CATEGORIES = []
 	DISPLAY_NAMES = {}
 	DISPLAY_LABELS = {}
-	print(f"Unable to import etl.drifts_results: {exc}")
+	print(f"Unable to import etl.mcr_results: {exc}")
 
 CACHE_REFRESH_ENV = 'FORCE_RESULTS_REFRESH'
 SUMMARY_FILENAME = 'redis_reason_counts.csv'

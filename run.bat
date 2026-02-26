@@ -1,10 +1,10 @@
 @echo off
 REM ==========================================
-REM DRIFTS - Docker Management
+REM MCR - Docker Management
 REM ==========================================
 
-set IMAGE_NAME=drifts:latest
-set CONTAINER_NAME=drifts-container
+set IMAGE_NAME=mcr:latest
+set CONTAINER_NAME=mcr-container
 
 if "%1"=="" goto start
 if /I "%1"=="start" goto start
@@ -35,7 +35,7 @@ exit /b 0
 :start
 echo.
 echo ==========================================
-echo   DRIFTS - Starting Container
+echo   MCR - Starting Container
 echo ==========================================
 echo.
 
@@ -132,7 +132,7 @@ exit /b 0
 :rebuild
 echo.
 echo ==========================================
-echo   DRIFTS - Rebuilding Image
+echo   MCR - Rebuilding Image
 echo ==========================================
 echo.
 docker build --no-cache -t %IMAGE_NAME% .
@@ -147,7 +147,7 @@ goto start
 :clean_rebuild
 echo.
 echo ==========================================
-echo   DRIFTS - Clean Rebuild
+echo   MCR - Clean Rebuild
 echo ==========================================
 echo.
 echo Removing container...

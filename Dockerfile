@@ -1,8 +1,8 @@
-# DRIFTS
+# MCR
 FROM python:3.11-slim
 
-LABEL maintainer="DRIFTS Project"
-LABEL description="DRIFTS Container"
+LABEL maintainer="MCR Project"
+LABEL description="MCR Container"
 
 WORKDIR /app
 

@@ -31,7 +31,7 @@ As complex machine learning models are increasingly deployed in critical systems
 The effectiveness and scalability of our approach are validated empirically on Random Forest models using tabular dataset.
 
 This repository contains utilities, code and results for converting scikit-learn tree ensembles
-into the internal DRIFTS representation and for preparing tabular datasets. The tooling spans
+into the internal MCR representation and for preparing tabular datasets. The tooling spans
 from dataset initialisation scripts to helpers that persist forests and samples
 into Redis-backed caches.
 
@@ -53,7 +53,7 @@ Maximal continuous reason vs [AXp](https://arxiv.org/abs/2105.10278)
 
 The experimental results are summarized in the following visualizations.
 
-**Coverage Comparison: AXp vs DRIFTS**
+**Coverage Comparison: AXp vs MCR**
 
 | Dataset        | AXp Coverage (%) | Our Coverage (%) |
 | -------------- | ---------------- | ---------------- |
@@ -388,7 +388,7 @@ jupyter notebook models_analysis.ipynb
 
 ## Running Experiments
 
-The repository includes three experimental workflows to evaluate DRIFTS performance under different conditions.
+The repository includes three experimental workflows to evaluate MCR performance under different conditions.
 
 ### Prerequisites
 
@@ -399,7 +399,7 @@ Before running experiments:
 
 ### 1. Worker Scaling Experiments
 
-**Purpose:** Evaluate DRIFTS performance across different worker counts and datasets.
+**Purpose:** Evaluate MCR performance across different worker counts and datasets.
 
 ```bash
 python run_experiments.py
@@ -407,7 +407,7 @@ python run_experiments.py
 
 **What it does:**
 
-- Tests DRIFTS with varying numbers of workers (e.g., 1, 2, 4, 8, 16)
+- Tests MCR with varying numbers of workers (e.g., 1, 2, 4, 8, 16)
 - Processes multiple datasets and class labels
 - Measures computation time, coverage, and reason quality
 - Automatically saves checkpoints and logs
@@ -430,7 +430,7 @@ python run_experiments.py
 
 ### 2. Ablation Study
 
-**Purpose:** Measure the impact of individual early stopping mechanism in DRIFTS.
+**Purpose:** Measure the impact of individual early stopping mechanism in MCR.
 
 ```bash
 python run_experiments.py --ablation
@@ -460,7 +460,7 @@ python run_experiments.py --ablation
   - `ablation_R1_NR0_GP1_BP1` (negative reason disabled)
   - `ablation_R1_NR1_GP0_BP1` (global pruning disabled)
   - `ablation_R1_NR1_GP1_BP0` (batch pruning disabled)
-  - `all_features` (full DRIFTS)
+  - `all_features` (full MCR)
 
 **Analysis:**
 Use `ablation_results.ipynb` to visualize:
@@ -471,7 +471,7 @@ Use `ablation_results.ipynb` to visualize:
 
 ### 3. AXp Experiments
 
-**Purpose:** Generate baseline metrics for comparison with DRIFTS.
+**Purpose:** Generate baseline metrics for comparison with MCR.
 
 ```bash
 python run_experiments_baseline.py
@@ -527,14 +527,14 @@ After running experiments, use the analysis notebooks to generate insights:
 
 Primary analysis notebook with:
 
-- Overall DRIFTS performance metrics
+- Overall MCR performance metrics
 - Worker scaling efficiency charts
 - Reason quality and coverage analysis
 - Summary tables and statistics
 
 ### `coverage.ipynb`
 
-Comparison between DRIFTS and [AXp](https://arxiv.org/abs/2105.10278) explanation:
+Comparison between MCR and [AXp](https://arxiv.org/abs/2105.10278) explanation:
 
 - Coverage analysis
 - Sample-by-sample coverage growth

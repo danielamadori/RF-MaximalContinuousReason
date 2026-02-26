@@ -456,7 +456,7 @@ def patch_models_analysis_enriched(
     import_cell_src = [
         f"{SUPPORT_FUNCTION_MARKER}\n",
         "from pathlib import Path\n",
-        "from drifts_results import compute_counts_from_results, load_analyzed_df, cast_dataset_str, CAT_LIST, DB_TO_CAT\n",
+        "from mcr_results import compute_counts_from_results, load_analyzed_df, cast_dataset_str, CAT_LIST, DB_TO_CAT\n",
         "# Detect notebook base directory as robustly as possible\n",
         "try:\n",
         "    from IPython import get_ipython\n",
