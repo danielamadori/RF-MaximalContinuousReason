@@ -1,0 +1,26 @@
+{
+  "entries": [
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMTAwMDExMDExMDExMDExMDExMDExMDAwMDAwMDAwMDAwMDAwMDExMTExMTExMTExMTExMTExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTExMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTExMDAwMDAwMTEwMDAxMTExMTExMTExMTExMTExMTExMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMTAwMDExMTEwMTEwMTEwMTEwMTEwMTEw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ADJ7InRlc3RfaW5kZXgiOiAxOSwgInRpbWVzdGFtcCI6IDE3NjkzMzY1MzQuNDc4MzEyfQwA+lLzMYVRXAE=",
+        "encoding": "dump"
+      }
+    }
+  ],
+  "metadata": {
+    "created_at_utc": "2026-01-25T10:30:48.415432Z",
+    "key_count": 1,
+    "scan_count": 1000,
+    "source": {
+      "db": 1,
+      "host": "localhost",
+      "port": 6379
+    },
+    "type_summary": {
+      "string": 1
+    }
+  }
+}

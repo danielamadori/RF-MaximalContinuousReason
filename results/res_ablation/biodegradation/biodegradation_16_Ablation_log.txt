@@ -1,0 +1,7 @@
+==================================================
+Starting experiment with parameters:
+dataset: biodegradation
+num workers: 16
+time per sample: 360.0
+ablation params: R True, NR True, GP True, BP False
+==================================================

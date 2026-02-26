@@ -1,0 +1,215 @@
+{
+  "entries": [
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDExMTEwMDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljc2OTkxNAwAPXEhwUqIcXY=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjkzMjk1MAwAEiPC/KIc18U=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI3LjAwMzk1MAwAkzPde+c9h/0=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljc5ODgxMgwAvVwH3TvmkaA=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjgwNzQyNwwAR//CwMg82mk=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMTExMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljg1NzUzNgwAsLrDLifseOc=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljg5NDQ4MQwApkmLarJwB/o=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjkwMzA2MAwAtBDFmHOYsYk=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljg2ODc0NAwA6fIf7ypvvAI=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAxMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjgzMDYzNwwAEcicFo1PqNQ=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDExMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjgxNTE3MgwAI6oWuvvpYbY=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljc3NzE1NwwArLpT5cWtZRY=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljc5NzkxMAwAf9/h2V7e7mY=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTExMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjgwNjk5NgwAreWMIGRDKWg=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjgyMTA1MQwACDBT6zXt9dI=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjkxNTE4NQwAuKrV5Bu7kwU=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjkyOTcwNwwAPXlq638VmCo=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTEwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2Ljk5NzE2OAwAeS3/Tfn7PzU=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjYxMDQwOAwAdgNOrKwGplQ=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjY3Mjg3NwwAs2aTRJqDm7o=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMDAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjY4MDQzMgwAPs8PT4m+tFM=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMTEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTAwMDAwMDExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTExMDAwMDAwMDAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjI2LjcxODcwOQwAH3qwFPgWwws=",
+        "encoding": "dump"
+      }
+    }
+  ],
+  "metadata": {
+    "created_at_utc": "2026-01-25T18:40:27.185310Z",
+    "key_count": 22,
+    "scan_count": 1000,
+    "source": {
+      "db": 3,
+      "host": "localhost",
+      "port": 6379
+    },
+    "type_summary": {
+      "string": 22
+    }
+  }
+}

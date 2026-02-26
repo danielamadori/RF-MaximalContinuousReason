@@ -1,0 +1,43 @@
+# worker_config.yaml - Simple Configuration (No Profiles)
+#
+# This is a profile-free configuration with only default settings.
+# No dev/prod profiles - just one simple configuration that works.
+#
+# To use: python launch_workers.py start
+
+# Redis configuration (applies to all workers)
+redis:
+  host: localhost
+  port: 6379
+
+# Worker configuration - single default setup
+workers:
+  default_worker:
+    count: 4                        # Number of worker instances to start
+    script: worker_cache_logged.py  # Worker script to run
+    args: []                        # Additional arguments (empty by default)
+
+# Logging configuration
+logging:
+  cleanup_days: 7   # Auto-cleanup logs older than 7 days
+  directory: logs   # Directory for log files
+
+# ============================================================================
+# Usage Examples
+# ============================================================================
+#
+# Start workers with this config:
+#   python launch_workers.py start
+#
+# Check worker status:
+#   python launch_workers.py status
+#
+# Stop all workers:
+#   python launch_workers.py stop
+#
+# View logs:
+#   python launch_workers.py logs
+#
+# Clean restart (stop, clean, start):
+#   python launch_workers.py clean-restart
+

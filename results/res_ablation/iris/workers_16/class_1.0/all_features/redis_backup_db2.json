@@ -1,0 +1,53 @@
+{
+  "entries": [
+    {
+      "key": "MDAwMDAwMDAwMDAwMDAwMDAwMDExMTAwMDAwMDAwMDAxMTExMTExMTExMTExMTExMTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTExMTExMTExMTEwMDAwMDAwMDAwMDAwMTExMTAwMDAwMDAwMDAw",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjA4LjA1NjMxMQwAHh8jyHNVlN0=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMDAwMDAwMDAwMDExMTExMTEwMDAwMDAwMDAwMDAxMTExMTExMTExMTExMTEwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjA4LjM5MTk4NwwASalj1SVuqWE=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMTExMTExMTExMTExMTExMDAwMDAwMDAwMDAwMDAxMTExMTExMTExMTExMTExMTExMDAwMTExMTExMTExMTExMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMTExMTExMTEx",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjA4LjMwNzU4NAwA8hTV/ZraXxQ=",
+        "encoding": "dump"
+      }
+    },
+    {
+      "key": "MDAwMTExMTExMTExMTExMTExMTEwMDAwMDAwMDAwMDAxMTExMTExMTExMTExMTEwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEx",
+      "pttl": null,
+      "type": "string",
+      "value": {
+        "data": "ABoyMDI2LTAxLTI1VDE5OjQwOjA4LjM4MzIwNQwASlgJpEFIAjo=",
+        "encoding": "dump"
+      }
+    }
+  ],
+  "metadata": {
+    "created_at_utc": "2026-01-25T18:40:08.450315Z",
+    "key_count": 4,
+    "scan_count": 1000,
+    "source": {
+      "db": 2,
+      "host": "localhost",
+      "port": 6379
+    },
+    "type_summary": {
+      "string": 4
+    }
+  }
+}

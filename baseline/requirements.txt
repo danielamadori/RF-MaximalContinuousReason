@@ -1,0 +1,13 @@
+# Core dependencies
+numpy
+scikit-learn
+
+# SAT solver and reasoning
+python-sat
+# Note: pypblib is optional but requires C++ build tools on Windows
+# Install manually if needed: pip install pypblib
+
+# Utilities
+six
+python-resources
+anytree

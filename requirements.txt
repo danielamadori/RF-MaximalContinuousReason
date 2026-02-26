@@ -1,0 +1,37 @@
+# Core data science libraries
+numpy>=1.20.0
+pandas>=1.3.0
+scipy>=1.7.0
+matplotlib>=3.3.0
+
+# Machine learning
+scikit-learn>=1.0.0
+scikit-optimize>=0.9.0
+ucimlrepo>=0.0.3
+
+# Jupyter
+jupyter>=1.0.0
+jupyterlab>=3.0.0
+
+# Database and caching
+redis>=4.0.0
+
+# Development and utility
+argparse  # Built-in but included for completeness
+jupyter>=1.0.0
+notebook>=6.4.0
+
+PyYAML
+openml
+pmlb
+
+#AXp Dependencys
+# SAT solver and reasoning
+python-sat
+# Note: pypblib is optional but requires C++ build tools on Windows
+# Install manually if needed: pip install pypblib
+
+# Utilities
+six
+python-resources
+anytree

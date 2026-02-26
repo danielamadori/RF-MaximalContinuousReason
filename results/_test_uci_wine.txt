@@ -1,0 +1,188 @@
+[START] Initializing Random Path Worker System
+[INFO] Dataset: Wine
+[INFO] Target Class Label: 1
+[INFO] Sample Percentage: 100.0%
+[INFO] Test Split: 0.3
+Connected to Redis DB 0 (DATA) on port 6379
+Connected to Redis DB 1 (CAN) on port 6379
+Connected to Redis DB 2 (R) on port 6379
+Connected to Redis DB 3 (NR) on port 6379
+Connected to Redis DB 4 (CAR) on port 6379
+Connected to Redis DB 5 (AR) on port 6379
+Connected to Redis DB 6 (GP) on port 6379
+Connected to Redis DB 7 (BP) on port 6379
+Connected to Redis DB 8 (PR) on port 6379
+Connected to Redis DB 9 (AP) on port 6379
+Connected to Redis DB 10 (LOGS) on port 6379
+Established 11 Redis connections
+Cleaning Redis databases...
+Cleaned database DATA (DB 0)
+Cleaned database CAN (DB 1)
+Cleaned database R (DB 2)
+Cleaned database NR (DB 3)
+Cleaned database CAR (DB 4)
+Cleaned database AR (DB 5)
+Cleaned database GP (DB 6)
+Cleaned database BP (DB 7)
+Cleaned database PR (DB 8)
+Cleaned database AP (DB 9)
+Cleaned database LOGS (DB 10)
+
+Cleaned 11/11 databases
+Loading dataset: Wine
+Dataset: Wine
+Original shape: 178 samples, 13 features
+Encoding categorical features...
+Handling missing values...
+Clean shape: 178 samples, 13 features
+Classes: ['1' '2' '3']
+Splitting data with test_split=0.3
+Training set: 124 samples
+Test set: 54 samples
+[INFO] Forest Parameters: {'random_state': 42, 'n_estimators': 10}
+Training Random Forest...
+RF parameters: {'random_state': 42, 'n_estimators': 10}
+Training set: 124 samples
+Test set: 54 samples
+Training accuracy: 1.000
+Test accuracy: 0.963
+Converting to custom Forest format...
+Converted to Forest with 10 trees
+Storing training set in DATA['TRAINING_SET']...
+[OK] Training set saved successfully (124 samples, 13 features)
+Storing Random Forest in DATA['RF']...
+Successfully stored forest with 10 trees in Redis key 'RF'
+[OK] Forest saved successfully
+Extracting feature thresholds...
+Extracted thresholds for 13 features
+Storing endpoints universe in DATA['EU']...
+Successfully stored dictionary with 13 keys in Redis key 'EU'
+[OK] Endpoints universe saved successfully
+
+=== Processing All Samples Classified as '1' ===
+Found 18 samples classified as '1'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_0'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_1'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_2'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_3'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_4'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_5'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_6'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_7'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_8'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_9'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_10'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_11'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_12'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_13'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_14'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_15'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_16'
+Successfully stored sample with 13 features in Redis key 'sample_Wine_1_17'
+[OK] Stored 18 samples in DATA
+[OK] Stored 18 ICF representations in R
+[OK] Correct predictions: 17
+[OK] Incorrect predictions: 1
+[OK] Accuracy: 0.944
+[OK] Summary stored in DATA['summary_Wine_1']
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 12 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 10 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 12 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 12 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 10 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 10 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+Generating initial ICF and storing in CAN and PR...
+ICF calculated for 11 features
+Generated bitmap with 100 bits
+[OK] Stored initial candidate in CAN
+[OK] Stored initial candidate in PR
+[INFO] Target label '1' set for worker processing
+
+[SUCCESS] Successfully initialized Wine
+[INFO] Dataset type: UCI
+[INFO] Forest: 10 trees
+[INFO] Features: 13
+[INFO] Processed: 18 samples with label '1'
+[OK] Correct: 17
+[INFO] Incorrect: 1
+[INFO] Accuracy: 0.944
+[INFO] Data stored in Redis databases
