@@ -123,9 +123,9 @@ The data are also computated and available in `coverage.ipynb`.
 | wine-recog  | 1176.55             | 917.45              | 1.25    | 1.28          | 0.64       |
 
 **Scalability Data: 32, 16, 8, 4, 2, 1 Workers**
-
-![Scalability Analysis](results/images/scalability_all1.jpeg)
 ![Scalability Analysis](results/images/scalability_all.jpeg)
+![Scalability Analysis](results/images/scalability_efficiency.png)
+![Scalability Analysis](results/images/scalability_speedup.jpeg)
 
 ## Installation
 
