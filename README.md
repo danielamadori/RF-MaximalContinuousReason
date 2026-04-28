@@ -471,30 +471,55 @@ Use `ablation_results.ipynb` to visualize:
 
 ### 3. AXp Experiments
 
-**Purpose:** Generate baseline metrics for comparison with MCR.
+**Purpose:** Generate AXp-style baseline explanation metrics for comparison
+with MCR.
 
 ```bash
 python run_experiments_baseline.py
 ```
 
+Run the inflated-explanation backend:
+
+```bash
+python run_experiments_baseline.py --explainer infxp
+```
+
+Run both supported baseline explainers:
+
+```bash
+python run_experiments_baseline.py --explainer all
+```
+
+Run the same backend selection over all converted classifiers in
+`baseline/Classifiers-100-converted/`:
+
+```bash
+python run_experiments_baseline.py --from-converted --explainer infxp
+```
+
 **What it does:**
 
-- Tests standard Random Forest classifiers
-- Grid search over forest sizes and depths
-- Measures prediction accuracy and timing
-- No reason extraction (pure RF performance)
+- Loads or trains Random Forest classifiers
+- Runs explanation generation on selected test samples
+- Measures prediction accuracy, explanation length, and explanation timing
+- Supports the default `xrf` backend and the inflated-explanation `infxp`
+  backend from `baseline/infxp/Infxpl.py`
 
 **Configuration:**
 
 - Modify grid parameters in script:
-  - `n_estimators` — Number of trees
-  - `max_depth` — Tree depth limits
+  - `n_estimators` - Number of trees
+  - `max_depth` - Tree depth limits
   - Dataset selection and test splits
+- Select the explainer at runtime with `--explainer xrf`, `--explainer infxp`,
+  or `--explainer all`
 
 **Output:**
 
-- Results in `baseline/experiments/`
-- CSV files with accuracy, training time, and prediction time
+- Default `xrf` results in `baseline/resources/experiments/<dataset>/`
+- `infxp` results in `baseline/resources/experiments/infxp/<dataset>/`
+- JSON files with model metadata, accuracy, explanation times, explanation
+  lengths, and full explanations
 - Used as comparison baseline in analysis notebooks
 
 ### Monitoring Experiments

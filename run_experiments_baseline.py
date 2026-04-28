@@ -17,7 +17,6 @@ import numpy as np
 from datetime import datetime
 from sklearn.metrics import accuracy_score
 
-from rf_utils import get_rf_search_space, optimize_rf_hyperparameters
 from load_rf_from_json import load_rf_from_json
 
 try:
@@ -31,6 +30,38 @@ except ImportError:
 from baseline.xrf import XRF, Dataset
 from baseline.xrf import RFBreiman, RFSklearn
 
+SUPPORTED_EXPLAINERS = ('xrf', 'infxp')
+INFXP_EXPLAINER_CLASS = None
+
+
+def _add_sys_path(path):
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+
+def _load_infxp_explainer_class():
+    global INFXP_EXPLAINER_CLASS
+    if INFXP_EXPLAINER_CLASS is not None:
+        return INFXP_EXPLAINER_CLASS
+
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    baseline_dir = os.path.join(root_dir, 'baseline')
+    infxp_dir = os.path.join(baseline_dir, 'infxp')
+
+    _add_sys_path(baseline_dir)
+    _add_sys_path(infxp_dir)
+
+    try:
+        from baseline.infxp.Infxpl import INFXRF
+    except ImportError as e:
+        raise ImportError(
+            "Could not import the infxp backend from baseline/infxp/Infxpl.py. "
+            "Make sure the infxp dependencies are installed."
+        ) from e
+
+    INFXP_EXPLAINER_CLASS = INFXRF
+    return INFXP_EXPLAINER_CLASS
+
 
 class ExperimentRunner:
     """
@@ -40,7 +71,8 @@ class ExperimentRunner:
     def __init__(self, dataset_path=None, output_dir='experiments', 
                  separator=',', use_categorical=False, algo='sklearn', verbose=True,
                  use_redis=False, redis_host='localhost', redis_port=6379, redis_db=0,
-                 classifier_json_dirs=None, classifier_json_required=False):
+                 classifier_json_dirs=None, classifier_json_required=False,
+                 explainer_backend='xrf'):
         """
         Initialize experiment runner.
         
@@ -57,6 +89,7 @@ class ExperimentRunner:
             redis_db: Redis database number
             classifier_json_dirs: Directories to search for converted classifier JSON files
             classifier_json_required: Fail if a converted classifier is not found
+            explainer_backend: Explanation backend to use ('xrf' or 'infxp')
         """
         self.dataset_path = dataset_path
         self.output_dir = output_dir
@@ -65,6 +98,7 @@ class ExperimentRunner:
         self.algo = algo
         self.verbose = verbose
         self.use_redis = use_redis and REDIS_AVAILABLE
+        self.explainer_backend = self._normalize_explainer_backend(explainer_backend)
         if classifier_json_dirs is None:
             classifier_json_dirs = [
                 os.path.join('baseline', 'Classifiers-100-converted'),
@@ -94,7 +128,10 @@ class ExperimentRunner:
         if self.bench_name.endswith('.csv'):
             self.bench_name = os.path.splitext(self.bench_name)[0]
         
-        self.bench_dir = os.path.join(output_dir, self.bench_name)
+        if self.explainer_backend == 'xrf':
+            self.bench_dir = os.path.join(output_dir, self.bench_name)
+        else:
+            self.bench_dir = os.path.join(output_dir, self.explainer_backend, self.bench_name)
         os.makedirs(self.bench_dir, exist_ok=True)
 
         self.sample_data = None
@@ -119,6 +156,14 @@ class ExperimentRunner:
         self.results = []
 
     @staticmethod
+    def _normalize_explainer_backend(explainer_backend):
+        explainer_backend = (explainer_backend or 'xrf').lower()
+        if explainer_backend not in SUPPORTED_EXPLAINERS:
+            choices = ', '.join(SUPPORTED_EXPLAINERS)
+            raise ValueError(f"Unsupported explainer backend '{explainer_backend}'. Choose one of: {choices}")
+        return explainer_backend
+
+    @staticmethod
     def _normalize_classifier_dirs(classifier_json_dirs):
         if classifier_json_dirs is None:
             return []
@@ -137,6 +182,30 @@ class ExperimentRunner:
                 return json_path
 
         return None
+
+    def _create_explainer(self, model, verb):
+        if self.explainer_backend == 'xrf':
+            explainer_cls = XRF
+        else:
+            explainer_cls = _load_infxp_explainer_class()
+
+        explainer = explainer_cls(model, self.data.m_features_, self.data.targets, verb=verb)
+        if getattr(self.data, 'cat_data', False):
+            explainer.ffnames = self.data.m_features_
+            explainer.readable_data = lambda x: self.data.readable_sample(self.data.transform_inverse(x)[0])
+        return explainer
+
+    def _explain_sample(self, explainer, sample, xtype, etype, smallest, sample_index):
+        if self.explainer_backend == 'xrf':
+            return explainer.explain(
+                sample,
+                xtype=xtype,
+                etype=etype,
+                smallest=smallest,
+                sample_index=sample_index
+            )
+
+        return explainer.explain(sample, xtype=xtype, etype=etype, smallest=smallest)
 
     def _evaluate_model(self, model):
         X_train, X_test, y_train, y_test = self.data.train_test_split()
@@ -200,6 +269,7 @@ class ExperimentRunner:
         print(f"\n{'#'*60}")
         print(f"# Running JSON Experiments")
         print(f"# Dataset: {self.bench_name}")
+        print(f"# Explainer: {self.explainer_backend}")
         print(f"# Total classifiers: {len(json_files)}")
         print(f"{'#'*60}\n")
 
@@ -223,6 +293,7 @@ class ExperimentRunner:
                     'n_estimators': n_estimators,
                     'max_depth': max_depth,
                     'classifier_json_path': json_path,
+                    'explainer': self.explainer_backend,
                     'error': str(e),
                     'timestamp': datetime.now().isoformat()
                 })
@@ -330,7 +401,10 @@ class ExperimentRunner:
             Dictionary with experiment results
         """
         print(f"\n{'='*60}")
-        print(f"Running experiment: n_estimators={n_estimators}, max_depth={max_depth}")
+        print(
+            f"Running experiment: n_estimators={n_estimators}, "
+            f"max_depth={max_depth}, explainer={self.explainer_backend}"
+        )
         print(f"{'='*60}")
         
         json_path = classifier_json_path
@@ -377,9 +451,9 @@ class ExperimentRunner:
 
             training_time = time.time() - start_time
         
-        # Create XRF explainer
+        # Create explainer backend
         verb = 0 if not self.verbose else 1
-        xrf = XRF(cls, self.data.m_features_, self.data.targets, verb=verb)
+        explainer = self._create_explainer(cls, verb)
         
         # Get model complexity metrics
         rf_model = self._get_forest_model(cls)
@@ -396,7 +470,7 @@ class ExperimentRunner:
             else:
                 num_samples = len(X_samples)
             explanation_results = self._generate_explanations(
-                xrf,
+                explainer,
                 X_samples,
                 num_samples=num_samples,
                 test_index_list=test_index_list
@@ -404,7 +478,7 @@ class ExperimentRunner:
         else:
             _, X_test, _, y_test = self.data.train_test_split()
             X_test = self.data.transform(X_test)
-            explanation_results = self._generate_explanations(xrf, X_test, test_index_list=test_index_list)
+            explanation_results = self._generate_explanations(explainer, X_test, test_index_list=test_index_list)
         
         result = {
             'n_estimators': n_estimators,
@@ -417,7 +491,8 @@ class ExperimentRunner:
             'avg_tree_depth': avg_depth,
             'timestamp': datetime.now().isoformat(),
             'explanations': explanation_results,
-            'model_source': model_source
+            'model_source': model_source,
+            'explainer': self.explainer_backend
         }
         if json_path:
             result['classifier_json_path'] = json_path
@@ -447,12 +522,12 @@ class ExperimentRunner:
         
         return result
     
-    def _generate_explanations(self, xrf, X_test, num_samples=5, test_index_list = None, xtype='abd', etype='sat', smallest=False):
+    def _generate_explanations(self, explainer, X_test, num_samples=5, test_index_list = None, xtype='abd', etype='sat', smallest=False):
         """
         Generate explanations for a subset of test samples.
         
         Args:
-            xrf: XRF explainer instance
+            explainer: Explanation backend instance
             num_samples: Number of test samples to explain
             xtype: Type of explanation ('abd' or 'con')
             etype: Encoding type ('sat' or 'maxsat')
@@ -477,7 +552,14 @@ class ExperimentRunner:
                 
                 try:
                     expl_start = time.time()
-                    expl = xrf.explain(sample, xtype=xtype, etype=etype, smallest=smallest, sample_index=i)
+                    expl = self._explain_sample(
+                        explainer,
+                        sample,
+                        xtype=xtype,
+                        etype=etype,
+                        smallest=smallest,
+                        sample_index=i
+                    )
                     expl_time = time.time() - expl_start
                     
                     explanations.append(expl)
@@ -498,7 +580,14 @@ class ExperimentRunner:
                 
                 try:
                     expl_start = time.time()
-                    expl = xrf.explain(sample, xtype=xtype, etype=etype, smallest=smallest, sample_index=i)
+                    expl = self._explain_sample(
+                        explainer,
+                        sample,
+                        xtype=xtype,
+                        etype=etype,
+                        smallest=smallest,
+                        sample_index=i
+                    )
                     expl_time = time.time() - expl_start
                     
                     explanations.append(expl)
@@ -552,6 +641,7 @@ class ExperimentRunner:
         print(f"\n{'#'*60}")
         print(f"# Running Grid Experiment")
         print(f"# Dataset: {self.bench_name}")
+        print(f"# Explainer: {self.explainer_backend}")
         print(f"# n_estimators: {n_estimators_list}")
         print(f"# max_depth: {max_depth_list}")
         print(f"# Total experiments: {len(n_estimators_list) * len(max_depth_list)}")
@@ -567,6 +657,7 @@ class ExperimentRunner:
                     self.results.append({
                         'n_estimators': n_est,
                         'max_depth': depth,
+                        'explainer': self.explainer_backend,
                         'error': str(e),
                         'timestamp': datetime.now().isoformat()
                     })
@@ -585,6 +676,7 @@ class ExperimentRunner:
                 'dataset': self.dataset_path,
                 'bench_name': self.bench_name,
                 'algorithm': self.algo,
+                'explainer': self.explainer_backend,
                 'use_categorical': self.use_categorical,
                 'experiments': self.results
             }, f, indent=2)
@@ -600,13 +692,19 @@ class ExperimentRunner:
         try:
             # Create a Redis key based on dataset name and timestamp
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            redis_key = f"experiment:{self.bench_name}:{timestamp}"
+            if self.explainer_backend == 'xrf':
+                redis_key = f"experiment:{self.bench_name}:{timestamp}"
+                index_key = f"experiment_index:{self.bench_name}"
+            else:
+                redis_key = f"experiment:{self.explainer_backend}:{self.bench_name}:{timestamp}"
+                index_key = f"experiment_index:{self.explainer_backend}:{self.bench_name}"
             
             # Store the full experiment data
             data = {
                 'dataset': self.dataset_path,
                 'bench_name': self.bench_name,
                 'algorithm': self.algo,
+                'explainer': self.explainer_backend,
                 'use_categorical': self.use_categorical,
                 'timestamp': timestamp,
                 'experiments': self.results
@@ -616,7 +714,6 @@ class ExperimentRunner:
             print(f"Results saved to Redis: {redis_key}")
             
             # Also add to an index of all experiments for this dataset
-            index_key = f"experiment_index:{self.bench_name}"
             self.redis_conn.sadd(index_key, redis_key)
             
             # Store individual experiment results with separate keys for easy querying
@@ -733,7 +830,7 @@ class ExperimentRunner:
     
 #     runner.run_grid_experiment(n_estimators_list, max_depth_list)
 
-def main():
+def main(explainer_backend='xrf'):
     # Run experiments on a tabular baseline dataset
     name_dataset = 'iris'
     dataset = f'baseline/resources/datasets/{name_dataset}/{name_dataset}.csv'
@@ -759,10 +856,11 @@ def main():
         redis_host=redis_host,
         redis_port=redis_port,
         redis_db=redis_db,
+        explainer_backend=explainer_backend,
     )
     runner.run_grid_experiment(n_estimators_list, max_depth_list, test_index_list=test_index_list)
 
-def main_from_converted():
+def main_from_converted(explainer_backend='xrf'):
     converted_dir = os.path.join('baseline', 'Classifiers-100-converted')
     datasets_root = os.path.join('baseline', 'resources', 'datasets')
     output = 'baseline/resources/experiments'
@@ -811,12 +909,40 @@ def main_from_converted():
             redis_port=redis_port,
             redis_db=redis_db,
             classifier_json_dirs=[converted_dir],
-            classifier_json_required=False
+            classifier_json_required=False,
+            explainer_backend=explainer_backend
         )
         runner.run_json_experiments(sorted(json_files))
+
+
+def parse_script_args():
+    parser = argparse.ArgumentParser(
+        description='Run baseline Random Forest explanation experiments.'
+    )
+    parser.add_argument(
+        '--from-converted',
+        action='store_true',
+        help='Run all converted classifiers under baseline/Classifiers-100-converted.'
+    )
+    parser.add_argument(
+        '--explainer',
+        choices=SUPPORTED_EXPLAINERS + ('all',),
+        default='xrf',
+        help="Explanation backend to use: 'xrf', 'infxp', or 'all'."
+    )
+    return parser.parse_args()
+
+
+def expand_explainers(explainer):
+    if explainer == 'all':
+        return list(SUPPORTED_EXPLAINERS)
+    return [explainer]
+
+
 if __name__ == '__main__':
-    if '--from-converted' in sys.argv:
-        sys.argv.remove('--from-converted')
-        main_from_converted()
-    else:
-        main()
+    args = parse_script_args()
+    for explainer_backend in expand_explainers(args.explainer):
+        if args.from_converted:
+            main_from_converted(explainer_backend=explainer_backend)
+        else:
+            main(explainer_backend=explainer_backend)

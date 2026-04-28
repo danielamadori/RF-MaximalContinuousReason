@@ -43,6 +43,25 @@ Compute inflated explanation when data features are categorical or/and ordinal.
 <code>$> ./infxp/GiAXp.py -v -X abd -M  -x '5.4,3.0,4.5,1.5' ./tests/iris/iris_nbestim_10_maxdepth_2.mod.pkl   ./tests/iris/iris.csv
 </code>
 
+* Run repository baseline experiments with inflated explanations:
+
+The top-level `run_experiments_baseline.py` runner can now use this
+`infxp` implementation through the same dataset/model loading flow used for
+the default `xrf` backend.
+
+<code>$> python ../run_experiments_baseline.py --explainer infxp</code>
+
+Use `--from-converted` to run over the converted classifiers under
+`baseline/Classifiers-100-converted/`, or `--explainer all` to run both `xrf`
+and `infxp`.
+
+<code>$> python ../run_experiments_baseline.py --from-converted --explainer infxp</code>
+
+The default `xrf` output stays under
+`baseline/resources/experiments/&lt;dataset&gt;/`. The `infxp` output is written
+under `baseline/resources/experiments/infxp/&lt;dataset&gt;/` so the two baselines
+do not overwrite each other.
+
 
 ## Citations
 
