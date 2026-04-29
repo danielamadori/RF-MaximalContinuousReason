@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-Run PyXAI Random Forest explanation timing experiments on baseline datasets.
+Run PyXAI Random Forest explanation timing experiments.
 
-The script loads the converted scikit-learn RandomForest JSON files already
-stored under baseline/Classifiers-100-converted, imports each model into PyXAI,
-computes one explanation per sample, and writes both per-sample timings and
-dataset-level aggregates.
+By default the script loads the converted scikit-learn RandomForest JSON files
+already stored under baseline/Classifiers-100-converted. It can also reuse the
+dataset loading conventions from init_uci.py, init_openml.py, and init_pmlb.py,
+train a Random Forest in memory, import it into PyXAI, compute one explanation
+per sample, and write both per-sample timings and dataset-level aggregates.
 """
 
 from __future__ import print_function
 
 import argparse
 import csv
+import importlib
 import json
-import os
 import statistics
 import sys
 import time
@@ -29,6 +30,12 @@ from helpers import convert_numpy_types, parse_sample_indices
 CLASSIFIERS_ROOT = Path("baseline") / "Classifiers-100-converted"
 DATASETS_ROOT = Path("baseline") / "resources" / "datasets"
 DEFAULT_OUTPUT_DIR = Path("results") / "pyxai_rf"
+INIT_TYPE_MODULES = OrderedDict([
+    ("baseline", "init_baseline"),
+    ("uci", "init_uci"),
+    ("openml", "init_openml"),
+    ("pmlb", "init_pmlb"),
+])
 
 SAMPLE_FIELDNAMES = [
     "run_id",
@@ -73,11 +80,54 @@ AGGREGATE_FIELDNAMES = [
 
 
 class DatasetRecord(object):
-    def __init__(self, name, classifier_path, dataset_path, samples_path):
+    def __init__(
+        self,
+        name,
+        classifier_path=None,
+        dataset_path=None,
+        samples_path=None,
+        init_type="baseline",
+        sklearn_rf=None,
+        feature_names=None,
+        samples=None,
+        labels=None,
+        sample_source_indices=None,
+        metadata=None,
+    ):
         self.name = name
-        self.classifier_path = Path(classifier_path)
-        self.dataset_path = Path(dataset_path)
-        self.samples_path = Path(samples_path)
+        self.classifier_path = Path(classifier_path) if classifier_path else None
+        self.dataset_path = Path(dataset_path) if dataset_path else None
+        self.samples_path = Path(samples_path) if samples_path else None
+        self.init_type = init_type
+        self.sklearn_rf = sklearn_rf
+        self.feature_names = list(feature_names) if feature_names is not None else None
+        self.samples = samples
+        self.labels = labels
+        self.sample_source_indices = sample_source_indices
+        self.metadata = metadata or {}
+
+
+def normalize_init_type(value):
+    value = (value or "baseline").strip().lower()
+    if value.endswith(".py"):
+        value = value[:-3]
+    if value.startswith("init_"):
+        value = value[5:]
+    if value not in INIT_TYPE_MODULES:
+        choices = ", ".join(INIT_TYPE_MODULES.keys())
+        raise ValueError("Unknown init type `%s`. Choose one of: %s" % (value, choices))
+    return value
+
+
+def load_init_module(init_type):
+    module_name = INIT_TYPE_MODULES[init_type]
+    try:
+        return importlib.import_module(module_name)
+    except ImportError as exc:
+        raise RuntimeError(
+            "Could not import %s for --init-type %s: %s. Install its dependencies first."
+            % (module_name, init_type, exc)
+        ) from exc
 
 
 def resolve_dataset_name(name, datasets_root):
@@ -172,6 +222,9 @@ def select_datasets(records, requested):
 
 
 def load_samples(record, separator=","):
+    if record.feature_names is not None and record.samples is not None:
+        return record.feature_names, np.asarray(record.samples, dtype=np.float32)
+
     with record.dataset_path.open("r", newline="", encoding="utf-8-sig") as handle:
         reader = csv.reader(handle, delimiter=separator)
         header = next(reader)
@@ -190,6 +243,314 @@ def load_samples(record, separator=","):
         )
 
     return feature_names, np.asarray(samples, dtype=np.float32)
+
+
+def labels_equal(left, right):
+    if str(left) == str(right):
+        return True
+    try:
+        return float(left) == float(right)
+    except (TypeError, ValueError):
+        return False
+
+
+def parse_max_features(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text.lower() in ("none", "null"):
+        return None
+    if text.lower() in ("sqrt", "log2"):
+        return text.lower()
+    try:
+        if "." in text:
+            return float(text)
+        return int(text)
+    except ValueError:
+        return text
+
+
+def parse_bool(value):
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "y", "on"):
+        return True
+    if text in ("0", "false", "no", "n", "off"):
+        return False
+    raise ValueError("Invalid boolean value `%s`" % value)
+
+
+def build_rf_params(args):
+    params = {"random_state": args.random_state}
+
+    if args.n_estimators is not None:
+        params["n_estimators"] = args.n_estimators
+    if args.criterion:
+        params["criterion"] = args.criterion
+    if args.max_depth is not None:
+        params["max_depth"] = args.max_depth
+    if args.min_samples_split is not None:
+        params["min_samples_split"] = args.min_samples_split
+    if args.min_samples_leaf is not None:
+        params["min_samples_leaf"] = args.min_samples_leaf
+    if args.max_leaf_nodes is not None:
+        params["max_leaf_nodes"] = args.max_leaf_nodes
+    if args.max_features is not None:
+        params["max_features"] = parse_max_features(args.max_features)
+    if args.min_impurity_decrease is not None:
+        params["min_impurity_decrease"] = args.min_impurity_decrease
+    if args.bootstrap is not None:
+        params["bootstrap"] = parse_bool(args.bootstrap)
+    if args.rf_max_samples is not None:
+        params["max_samples"] = args.rf_max_samples
+    if args.ccp_alpha is not None:
+        params["ccp_alpha"] = args.ccp_alpha
+
+    return params
+
+
+def train_random_forest(X_train, y_train, X_test, y_test, feature_names, args):
+    from sklearn.ensemble import RandomForestClassifier
+
+    rf_params = build_rf_params(args)
+
+    if args.optimize:
+        from rf_utils import get_rf_search_space, optimize_rf_hyperparameters
+
+        if not args.quiet:
+            print("[INFO] Optimizing RF hyperparameters, n_calls=%d" % args.n_calls)
+        best_params, _, _, _ = optimize_rf_hyperparameters(
+            X_train,
+            y_train,
+            get_rf_search_space(),
+            n_iter=args.n_calls,
+            random_state=args.random_state,
+            X_test=X_test,
+            y_test=y_test,
+            verbose=0 if args.quiet else 1,
+        )
+        rf_params.update(best_params)
+
+    if not args.quiet:
+        print("[INFO] Training RandomForestClassifier with params: %s" % rf_params)
+
+    sklearn_rf = RandomForestClassifier(**rf_params)
+    sklearn_rf.fit(X_train, y_train)
+
+    if not args.quiet:
+        train_score = sklearn_rf.score(X_train, y_train)
+        test_score = sklearn_rf.score(X_test, y_test) if len(X_test) else float("nan")
+        print("[INFO] RF accuracy train=%.3f test=%.3f" % (train_score, test_score))
+        print("[INFO] Features: %d" % len(feature_names))
+
+    return sklearn_rf
+
+
+def split_loaded_arrays(X, y, args, source_name):
+    from sklearn.model_selection import train_test_split
+
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y).astype(str)
+    source_indices = np.arange(len(X))
+    original_count = len(X)
+
+    if args.sample_pct <= 0 or args.sample_pct > 100:
+        raise ValueError("--sample-pct must be in the range (0, 100].")
+
+    if args.sample_pct < 100.0 and args.test_sample_index is None:
+        n_keep = max(1, int(len(X) * (args.sample_pct / 100.0)))
+        rng = np.random.default_rng(args.random_state)
+        kept = rng.choice(len(X), size=n_keep, replace=False)
+        X = X[kept]
+        y = y[kept]
+        source_indices = source_indices[kept]
+        if not args.quiet:
+            print("[INFO] %s: sampled %d/%d rows" % (source_name, n_keep, original_count))
+    elif args.sample_pct < 100.0:
+        print(
+            "[WARNING] --sample-pct ignored because --test-sample-index preserves source indices."
+        )
+
+    if args.test_sample_index is not None:
+        indices = parse_sample_indices(args.test_sample_index)
+        if any(index < 0 or index >= len(X) for index in indices):
+            raise ValueError(
+                "--test-sample-index outside valid range 0-%d for %s"
+                % (len(X) - 1, source_name)
+            )
+
+        test_rows = np.asarray(indices, dtype=int)
+        train_mask = np.ones(len(X), dtype=bool)
+        train_mask[test_rows] = False
+        return (
+            X[train_mask],
+            y[train_mask],
+            X[test_rows],
+            y[test_rows],
+            source_indices[test_rows],
+        )
+
+    try:
+        X_train, X_test, y_train, y_test, _, test_source_indices = train_test_split(
+            X,
+            y,
+            source_indices,
+            test_size=args.test_split,
+            random_state=args.random_state,
+            stratify=y,
+        )
+    except ValueError as exc:
+        if not args.quiet:
+            print("[WARNING] Stratified split failed (%s); falling back to plain split." % exc)
+        X_train, X_test, y_train, y_test, _, test_source_indices = train_test_split(
+            X,
+            y,
+            source_indices,
+            test_size=args.test_split,
+            random_state=args.random_state,
+            stratify=None,
+        )
+
+    return X_train, y_train, X_test, y_test, test_source_indices
+
+
+def build_openml_record(dataset_name, args):
+    module = load_init_module("openml")
+    X_df, y, actual_name = module.load_and_prepare_dataset(dataset_name)
+    if X_df is None or y is None:
+        raise ValueError("OpenML dataset `%s` could not be loaded." % dataset_name)
+
+    feature_names = [str(column) for column in X_df.columns]
+    y_values = np.asarray(y) if not hasattr(y, "to_numpy") else y.to_numpy()
+    X_train, y_train, X_test, y_test, source_indices = split_loaded_arrays(
+        np.asarray(X_df, dtype=float),
+        y_values,
+        args,
+        actual_name,
+    )
+    sklearn_rf = train_random_forest(X_train, y_train, X_test, y_test, feature_names, args)
+
+    return DatasetRecord(
+        "openml:%s" % actual_name,
+        init_type="openml",
+        sklearn_rf=sklearn_rf,
+        feature_names=feature_names,
+        samples=X_test,
+        labels=y_test,
+        sample_source_indices=source_indices,
+        metadata={"actual_name": actual_name, "source": "openml"},
+    )
+
+
+def build_pmlb_record(dataset_name, args):
+    module = load_init_module("pmlb")
+    X_df, y, actual_name = module.load_and_prepare_dataset(
+        dataset_name,
+        shuffle=args.test_sample_index is None,
+        random_state=args.random_state,
+    )
+    if X_df is None or y is None:
+        raise ValueError("PMLB dataset `%s` could not be loaded." % dataset_name)
+
+    feature_names = [str(column) for column in X_df.columns]
+    y_values = np.asarray(y) if not hasattr(y, "to_numpy") else y.to_numpy()
+    X_train, y_train, X_test, y_test, source_indices = split_loaded_arrays(
+        np.asarray(X_df, dtype=float),
+        y_values,
+        args,
+        actual_name,
+    )
+    sklearn_rf = train_random_forest(X_train, y_train, X_test, y_test, feature_names, args)
+
+    return DatasetRecord(
+        "pmlb:%s" % actual_name,
+        init_type="pmlb",
+        sklearn_rf=sklearn_rf,
+        feature_names=feature_names,
+        samples=X_test,
+        labels=y_test,
+        sample_source_indices=source_indices,
+        metadata={"actual_name": actual_name, "source": "pmlb"},
+    )
+
+
+def build_uci_record(dataset_name, args):
+    module = load_init_module("uci")
+    X_train, y_train, X_test, y_test, feature_names, class_names = module.load_and_prepare_dataset(
+        dataset_name=dataset_name,
+        dataset_id=args.uci_id,
+        feature_prefix=args.feature_prefix,
+        test_split=args.test_split,
+        random_state=args.random_state,
+    )
+
+    if args.test_sample_index is not None:
+        X_all = np.vstack([X_train, X_test])
+        y_all = np.concatenate([y_train, y_test])
+        indices = parse_sample_indices(args.test_sample_index)
+        if any(index < 0 or index >= len(X_all) for index in indices):
+            raise ValueError(
+                "--test-sample-index outside valid range 0-%d for UCI dataset"
+                % (len(X_all) - 1)
+            )
+        test_rows = np.asarray(indices, dtype=int)
+        train_mask = np.ones(len(X_all), dtype=bool)
+        train_mask[test_rows] = False
+        X_train = X_all[train_mask]
+        y_train = y_all[train_mask]
+        X_test = X_all[test_rows]
+        y_test = y_all[test_rows]
+        source_indices = test_rows
+    else:
+        source_indices = np.arange(len(X_test))
+
+    actual_name = dataset_name or "ID=%s" % args.uci_id
+    feature_names = [str(name) for name in feature_names]
+    sklearn_rf = train_random_forest(X_train, y_train, X_test, y_test, feature_names, args)
+
+    return DatasetRecord(
+        "uci:%s" % actual_name,
+        init_type="uci",
+        sklearn_rf=sklearn_rf,
+        feature_names=feature_names,
+        samples=X_test,
+        labels=y_test,
+        sample_source_indices=source_indices,
+        metadata={
+            "actual_name": actual_name,
+            "source": "uci",
+            "classes": list(convert_numpy_types(class_names)),
+        },
+    )
+
+
+def build_init_records(args):
+    if args.init_type == "baseline":
+        records = discover_datasets(
+            classifiers_root=Path(args.classifiers_root),
+            datasets_root=Path(args.datasets_root),
+        )
+        return select_datasets(records, args.datasets)
+
+    requested = list(args.datasets or [])
+    if args.init_type == "uci" and args.uci_id is not None:
+        if len(requested) > 1:
+            raise ValueError("--uci-id can only be used with zero or one --datasets value.")
+        requested = [requested[0] if requested else None]
+
+    if not requested or "all" in requested:
+        raise ValueError(
+            "--datasets is required for --init-type %s; use --list-datasets to inspect options."
+            % args.init_type
+        )
+
+    builders = {
+        "openml": build_openml_record,
+        "pmlb": build_pmlb_record,
+        "uci": build_uci_record,
+    }
+    return [builders[args.init_type](dataset_name, args) for dataset_name in requested]
 
 
 def load_pyxai_modules():
@@ -295,7 +656,7 @@ def load_completed_keys(sample_csv, reason_method, retry_errors=False):
             status = row.get("status", "")
             if retry_errors and status == "error":
                 continue
-            completed.add((row.get("dataset"), int(row.get("sample_index"))))
+            completed.add((row.get("dataset"), str(row.get("sample_index"))))
     return completed
 
 
@@ -395,11 +756,30 @@ def write_manifest(output_dir, run_id, args, selected_records):
     manifest = {
         "run_id": run_id,
         "created_at": datetime.now().isoformat(),
+        "init_type": args.init_type,
         "reason_method": args.reason_method,
         "time_limit": args.time_limit,
         "majoritary_iterations": args.majoritary_iterations,
         "seed": args.seed,
+        "class_label": args.class_label,
+        "class_filter": args.class_filter,
+        "test_split": args.test_split,
+        "test_sample_index": args.test_sample_index,
+        "sample_pct": args.sample_pct,
+        "random_state": args.random_state,
+        "rf_params": build_rf_params(args),
         "datasets": [record.name for record in selected_records],
+        "dataset_metadata": [
+            {
+                "name": record.name,
+                "init_type": record.init_type,
+                "classifier_path": str(record.classifier_path) if record.classifier_path else "",
+                "dataset_path": str(record.dataset_path) if record.dataset_path else "",
+                "samples_path": str(record.samples_path) if record.samples_path else "",
+                "metadata": convert_numpy_types(record.metadata),
+            }
+            for record in selected_records
+        ],
         "sample_csv": str(output_dir / "pyxai_rf_sample_times.csv"),
         "aggregate_csv": str(output_dir / "pyxai_rf_dataset_aggregates.csv"),
     }
@@ -417,20 +797,43 @@ def write_manifest(output_dir, run_id, args, selected_records):
     return manifest_path
 
 
-def sample_indices_for(samples, args):
+def sample_display_index(record, sample_row):
+    if record.sample_source_indices is None:
+        return int(sample_row)
+    value = record.sample_source_indices[sample_row]
+    return convert_numpy_types(value)
+
+
+def selected_sample_rows(record, samples, sklearn_rf, args):
     if args.sample_index:
-        indices = parse_sample_indices(args.sample_index)
+        rows = parse_sample_indices(args.sample_index)
     else:
-        indices = list(range(len(samples)))
+        rows = list(range(len(samples)))
 
     valid = []
-    for index in indices:
-        if index < 0 or index >= len(samples):
+    for row in rows:
+        if row < 0 or row >= len(samples):
             raise ValueError(
                 "Sample index %d outside valid range 0-%d"
-                % (index, len(samples) - 1)
+                % (row, len(samples) - 1)
             )
-        valid.append(index)
+        valid.append(row)
+
+    if args.class_label is not None:
+        filtered = []
+        if args.class_filter == "actual":
+            if record.labels is None:
+                raise ValueError(
+                    "--class-filter actual requires labels, unavailable for %s" % record.name
+                )
+            values = record.labels
+        else:
+            values = sklearn_rf.predict(samples)
+
+        for row in valid:
+            if labels_equal(values[row], args.class_label):
+                filtered.append(row)
+        valid = filtered
 
     if args.max_samples is not None:
         valid = valid[:args.max_samples]
@@ -438,37 +841,49 @@ def sample_indices_for(samples, args):
 
 
 def run_dataset(record, args, output_dir, sample_csv, completed_keys, run_id):
-    from load_rf_from_json import load_rf_from_json
-
     if not args.quiet:
         print("[DATASET] %s" % record.name)
-        print("[INFO] Classifier: %s" % record.classifier_path)
+        if record.classifier_path is not None:
+            print("[INFO] Classifier: %s" % record.classifier_path)
+        else:
+            print("[INFO] Classifier: trained in memory from %s" % record.init_type)
 
     feature_names, samples = load_samples(record, separator=args.separator)
-    selected_indices = sample_indices_for(samples, args)
 
-    sklearn_rf = load_rf_from_json(record.classifier_path)
+    if record.sklearn_rf is not None:
+        sklearn_rf = record.sklearn_rf
+    else:
+        from load_rf_from_json import load_rf_from_json
+        sklearn_rf = load_rf_from_json(record.classifier_path)
+
+    selected_rows = selected_sample_rows(record, samples, sklearn_rf, args)
+    if not selected_rows:
+        if not args.quiet:
+            print("[WARNING] No samples selected for %s" % record.name)
+        return
+
     import_start = time.perf_counter()
     _, pyxai_model = import_model_into_pyxai(sklearn_rf, feature_names)
     import_seconds = time.perf_counter() - import_start
 
     explainer = initialize_explainer(
         pyxai_model,
-        first_instance=samples[selected_indices[0]] if selected_indices else None,
+        first_instance=samples[selected_rows[0]],
     )
     reason_kwargs = build_reason_kwargs(args)
 
     if not args.quiet:
-        print("[INFO] Samples: %d, PyXAI import: %.3fs" % (len(selected_indices), import_seconds))
+        print("[INFO] Samples: %d, PyXAI import: %.3fs" % (len(selected_rows), import_seconds))
 
-    for ordinal, sample_index in enumerate(selected_indices, start=1):
-        key = (record.name, sample_index)
+    for ordinal, sample_row in enumerate(selected_rows, start=1):
+        sample_index = sample_display_index(record, sample_row)
+        key = (record.name, str(sample_index))
         if args.resume and key in completed_keys:
             if not args.quiet and (ordinal == 1 or ordinal % args.progress_every == 0):
-                print("[SKIP] %s sample %d already recorded" % (record.name, sample_index))
+                print("[SKIP] %s sample %s already recorded" % (record.name, sample_index))
             continue
 
-        instance = samples[sample_index]
+        instance = samples[sample_row]
         timestamp = datetime.now().isoformat()
         set_instance_seconds = None
         explanation_seconds = None
@@ -530,9 +945,9 @@ def run_dataset(record, args, output_dir, sample_csv, completed_keys, run_id):
             "set_instance_seconds": format_float(set_instance_seconds),
             "explanation_seconds": format_float(explanation_seconds),
             "total_seconds": format_float(total_seconds),
-            "classifier_path": str(record.classifier_path),
-            "dataset_path": str(record.dataset_path),
-            "samples_path": str(record.samples_path),
+            "classifier_path": str(record.classifier_path) if record.classifier_path else "",
+            "dataset_path": str(record.dataset_path) if record.dataset_path else "",
+            "samples_path": str(record.samples_path) if record.samples_path else "",
             "error": error,
             "reason": json_dumps_cell(reason),
             "reason_features": json_dumps_cell(features),
@@ -542,11 +957,11 @@ def run_dataset(record, args, output_dir, sample_csv, completed_keys, run_id):
 
         if not args.quiet and (ordinal == 1 or ordinal % args.progress_every == 0):
             print(
-                "[SAMPLE] %s %d/%d idx=%d status=%s total=%s"
+                "[SAMPLE] %s %d/%d idx=%s status=%s total=%s"
                 % (
                     record.name,
                     ordinal,
-                    len(selected_indices),
+                    len(selected_rows),
                     sample_index,
                     status,
                     row["total_seconds"] or "n/a",
@@ -556,18 +971,75 @@ def run_dataset(record, args, output_dir, sample_csv, completed_keys, run_id):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description="Run PyXAI RF explanation timings on baseline datasets."
+        description="Run PyXAI RF explanation timings using baseline or init_* dataset loaders."
+    )
+    parser.add_argument(
+        "--init-type",
+        default="baseline",
+        help="Dataset/model source: baseline, uci, openml, pmlb, or init_*.py name.",
     )
     parser.add_argument(
         "--datasets",
         nargs="*",
         default=None,
-        help="Datasets to run. Use `all` or omit for every complete baseline dataset.",
+        help=(
+            "Datasets to run. For baseline, use `all` or omit for every complete "
+            "baseline dataset. For uci/openml/pmlb, specify at least one dataset."
+        ),
     )
     parser.add_argument(
         "--list-datasets",
         action="store_true",
-        help="List datasets with classifier, CSV, and samples, then exit.",
+        help="List datasets for the selected --init-type, then exit.",
+    )
+    parser.add_argument(
+        "--classifiers-root",
+        default=str(CLASSIFIERS_ROOT),
+        help="Baseline classifier root used by --init-type baseline.",
+    )
+    parser.add_argument(
+        "--datasets-root",
+        default=str(DATASETS_ROOT),
+        help="Baseline dataset root used by --init-type baseline.",
+    )
+    parser.add_argument(
+        "--uci-id",
+        type=int,
+        default=None,
+        help="UCI dataset ID for --init-type uci.",
+    )
+    parser.add_argument(
+        "--feature-prefix",
+        default="f",
+        help="Feature prefix passed to init_uci.py.",
+    )
+    parser.add_argument(
+        "--test-split",
+        type=float,
+        default=0.3,
+        help="Train/test split for init_uci/init_openml/init_pmlb sources.",
+    )
+    parser.add_argument(
+        "--test-sample-index",
+        default=None,
+        help="Rows to hold out as test samples for non-baseline init sources, e.g. 0,3-5.",
+    )
+    parser.add_argument(
+        "--sample-pct",
+        type=float,
+        default=100.0,
+        help="Percentage of loaded rows to keep before splitting for openml/pmlb.",
+    )
+    parser.add_argument(
+        "--class-label",
+        default=None,
+        help="Optionally restrict measured samples to this class label.",
+    )
+    parser.add_argument(
+        "--class-filter",
+        choices=["predicted", "actual"],
+        default="predicted",
+        help="When --class-label is set, filter by RF prediction or actual label.",
     )
     parser.add_argument(
         "--reason-method",
@@ -615,6 +1087,62 @@ def parse_args(argv):
         default=",",
         help="CSV separator for datasets and samples.",
     )
+    parser.add_argument("--random-state", type=int, default=42, help="RF/split random seed.")
+    parser.add_argument("--n-estimators", type=int, default=10, help="RF number of trees.")
+    parser.add_argument(
+        "--criterion",
+        default="gini",
+        choices=["gini", "entropy"],
+        help="RF split criterion.",
+    )
+    parser.add_argument("--max-depth", type=int, default=None, help="RF max depth.")
+    parser.add_argument(
+        "--min-samples-split",
+        type=int,
+        default=2,
+        help="RF min_samples_split.",
+    )
+    parser.add_argument(
+        "--min-samples-leaf",
+        type=int,
+        default=1,
+        help="RF min_samples_leaf.",
+    )
+    parser.add_argument("--max-leaf-nodes", type=int, default=None, help="RF max_leaf_nodes.")
+    parser.add_argument(
+        "--max-features",
+        default="sqrt",
+        help='RF max_features: sqrt, log2, None, int, or float. Default matches init_*.py.',
+    )
+    parser.add_argument(
+        "--min-impurity-decrease",
+        type=float,
+        default=0.0,
+        help="RF min_impurity_decrease.",
+    )
+    parser.add_argument(
+        "--bootstrap",
+        default="True",
+        help="RF bootstrap flag, True or False.",
+    )
+    parser.add_argument(
+        "--rf-max-samples",
+        type=float,
+        default=None,
+        help="RF max_samples for bootstrap. Separate from PyXAI --max-samples.",
+    )
+    parser.add_argument("--ccp-alpha", type=float, default=0.0, help="RF ccp_alpha.")
+    parser.add_argument(
+        "--optimize",
+        action="store_true",
+        help="Run Bayesian RF hyperparameter optimization before PyXAI import.",
+    )
+    parser.add_argument(
+        "--n-calls",
+        type=int,
+        default=20,
+        help="Optimization iterations for --optimize.",
+    )
     parser.add_argument(
         "--no-resume",
         dest="resume",
@@ -645,7 +1173,26 @@ def parse_args(argv):
     )
     parser.add_argument("--quiet", action="store_true", help="Reduce console output.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop on first sample error.")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+
+    try:
+        args.init_type = normalize_init_type(args.init_type)
+        parse_bool(args.bootstrap)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    if args.test_split <= 0 or args.test_split >= 1:
+        parser.error("--test-split must be in the range (0, 1).")
+    if args.sample_pct <= 0 or args.sample_pct > 100:
+        parser.error("--sample-pct must be in the range (0, 100].")
+    if args.max_samples is not None and args.max_samples < 0:
+        parser.error("--max-samples must be >= 0.")
+    if args.progress_every <= 0:
+        parser.error("--progress-every must be > 0.")
+    if args.uci_id is not None and args.init_type != "uci":
+        parser.error("--uci-id is only valid with --init-type uci.")
+
+    return args
 
 
 def main(argv=None):
@@ -654,13 +1201,28 @@ def main(argv=None):
     sample_csv = output_dir / "pyxai_rf_sample_times.csv"
     aggregate_csv = output_dir / "pyxai_rf_dataset_aggregates.csv"
 
-    records = discover_datasets()
     if args.list_datasets:
-        for name in records:
-            print(name)
+        if args.init_type == "baseline":
+            records = discover_datasets(
+                classifiers_root=Path(args.classifiers_root),
+                datasets_root=Path(args.datasets_root),
+            )
+            for name in records:
+                print(name)
+        else:
+            try:
+                load_init_module(args.init_type).list_available_datasets()
+            except Exception as exc:
+                print("[ERROR] %s" % exc, file=sys.stderr)
+                return 1
         return 0
 
-    selected_records = select_datasets(records, args.datasets)
+    try:
+        selected_records = build_init_records(args)
+    except Exception as exc:
+        print("[ERROR] %s" % exc, file=sys.stderr)
+        return 1
+
     if not selected_records:
         print("[ERROR] No complete datasets found.", file=sys.stderr)
         return 1
