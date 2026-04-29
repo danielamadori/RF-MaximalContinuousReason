@@ -205,7 +205,48 @@ class ExperimentRunner:
                 sample_index=sample_index
             )
 
-        return explainer.explain(sample, xtype=xtype, etype=etype, smallest=smallest)
+        return explainer.explain(
+            sample,
+            xtype=xtype,
+            etype=etype,
+            smallest=smallest,
+            sample_index=sample_index
+        )
+
+    @staticmethod
+    def _jsonable_feature_indices(expl):
+        if expl is None:
+            return []
+        return [int(idx) for idx in expl]
+
+    @staticmethod
+    def _get_explanation_backend_state(explainer):
+        return getattr(explainer, 'x', None)
+
+    def _build_explanation_record(self, explainer, expl, sample_index):
+        backend_state = self._get_explanation_backend_state(explainer)
+        interval_rule = getattr(backend_state, 'interval_explanation', None)
+        interval_terms = getattr(backend_state, 'interval_preamble', None)
+        rule = getattr(backend_state, 'explanation_rule', None) or interval_rule
+        infxp_coverage = getattr(backend_state, 'infxp_coverage', None)
+        axp_domain_coverage = getattr(backend_state, 'axp_domain_coverage', None)
+
+        record = {
+            'sample_index': None if sample_index is None else int(sample_index),
+            'feature_indices': self._jsonable_feature_indices(expl),
+        }
+        if rule is not None:
+            record['explanation_rule'] = rule
+        if interval_rule is not None:
+            record['interval_explanation'] = interval_rule
+        if interval_terms is not None:
+            record['interval_terms'] = interval_terms
+        if infxp_coverage is not None:
+            record['infxp_coverage'] = float(infxp_coverage)
+        if axp_domain_coverage is not None:
+            record['axp_domain_coverage'] = float(axp_domain_coverage)
+
+        return record
 
     def _evaluate_model(self, model):
         X_train, X_test, y_train, y_test = self.data.train_test_split()
@@ -541,6 +582,10 @@ class ExperimentRunner:
         num_samples = min(num_samples, len(X_test))
         
         explanations = []
+        explanation_details = []
+        interval_explanations = []
+        infxp_coverages = []
+        axp_domain_coverages = []
         explanation_times = []
         explanation_lengths = []
         
@@ -563,6 +608,11 @@ class ExperimentRunner:
                     expl_time = time.time() - expl_start
                     
                     explanations.append(expl)
+                    explanation_record = self._build_explanation_record(explainer, expl, i)
+                    explanation_details.append(explanation_record)
+                    interval_explanations.append(explanation_record.get('interval_explanation'))
+                    infxp_coverages.append(explanation_record.get('infxp_coverage'))
+                    axp_domain_coverages.append(explanation_record.get('axp_domain_coverage'))
                     explanation_times.append(float(expl_time))
                     explanation_lengths.append(len(expl) if expl else 0)
                     
@@ -572,6 +622,8 @@ class ExperimentRunner:
                 except Exception as e:
                     if self.verbose:
                         print(f"    Sample {i+1}: Error generating explanation: {e}")
+                    infxp_coverages.append(None)
+                    axp_domain_coverages.append(None)
                     explanation_times.append(None)
                     explanation_lengths.append(None)
         else:
@@ -591,6 +643,11 @@ class ExperimentRunner:
                     expl_time = time.time() - expl_start
                     
                     explanations.append(expl)
+                    explanation_record = self._build_explanation_record(explainer, expl, i)
+                    explanation_details.append(explanation_record)
+                    interval_explanations.append(explanation_record.get('interval_explanation'))
+                    infxp_coverages.append(explanation_record.get('infxp_coverage'))
+                    axp_domain_coverages.append(explanation_record.get('axp_domain_coverage'))
                     explanation_times.append(float(expl_time))
                     explanation_lengths.append(len(expl) if expl else 0)
                     
@@ -600,12 +657,16 @@ class ExperimentRunner:
                 except Exception as e:
                     if self.verbose:
                         print(f"    Sample {i+1}: Error generating explanation: {e}")
+                    infxp_coverages.append(None)
+                    axp_domain_coverages.append(None)
                     explanation_times.append(None)
                     explanation_lengths.append(None)
         
         # Calculate statistics
         valid_times = [t for t in explanation_times if t is not None]
         valid_lengths = [l for l in explanation_lengths if l is not None]
+        valid_infxp_coverages = [c for c in infxp_coverages if c is not None]
+        valid_axp_domain_coverages = [c for c in axp_domain_coverages if c is not None]
         
         result = {
             'num_samples_explained': num_samples,
@@ -619,7 +680,18 @@ class ExperimentRunner:
             'max_explanation_length': int(np.max(valid_lengths)) if valid_lengths else None,
             'explanation_times': explanation_times,
             'explanation_lengths': explanation_lengths,
-            'full_explanations': explanations
+            'explanation_indices': explanations,
+            'interval_explanations': interval_explanations,
+            'infxp_coverages': infxp_coverages,
+            'avg_infxp_coverage': float(np.mean(valid_infxp_coverages)) if valid_infxp_coverages else None,
+            'min_infxp_coverage': float(np.min(valid_infxp_coverages)) if valid_infxp_coverages else None,
+            'max_infxp_coverage': float(np.max(valid_infxp_coverages)) if valid_infxp_coverages else None,
+            'axp_domain_coverages': axp_domain_coverages,
+            'avg_axp_domain_coverage': float(np.mean(valid_axp_domain_coverages)) if valid_axp_domain_coverages else None,
+            'min_axp_domain_coverage': float(np.min(valid_axp_domain_coverages)) if valid_axp_domain_coverages else None,
+            'max_axp_domain_coverage': float(np.max(valid_axp_domain_coverages)) if valid_axp_domain_coverages else None,
+            'explanation_details': explanation_details,
+            'full_explanations': explanation_details
         }
         
         if self.verbose and valid_times:
@@ -627,6 +699,8 @@ class ExperimentRunner:
             print(f"    Successful: {len(valid_times)}/{num_samples}")
             print(f"    Avg time: {result['avg_explanation_time']:.3f}s")
             print(f"    Avg length: {result['avg_explanation_length']:.1f}")
+            if result['avg_infxp_coverage'] is not None:
+                print(f"    Avg INFXP coverage: {result['avg_infxp_coverage']:.2f}%")
         
         return result
     

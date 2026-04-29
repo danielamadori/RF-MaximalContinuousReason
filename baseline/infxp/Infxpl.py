@@ -63,6 +63,43 @@ class Explainer(SATExplainer):
             Initialiser.
         """
         super(Explainer, self).__init__(encoding, inps, preamble, target_name, verb)
+
+    def _build_interval_explanation(self, infx):
+        preamble = []
+        for i in sorted(infx):
+            feat = f'f{i}'
+            preamble.append([])
+            if feat in self.enc.intvs:
+                dom = sorted([int(self.enc.nameVar(p).split('_')[1][4:]) for p in infx[i]])
+                assert (len(self.enc.intvs[feat]) - len(dom))
+                dom = [dom[0]] + [
+                    dom[j]
+                    for j in range(1, len(dom))
+                    if (dom[j] - dom[j - 1] > 1) or j == len(dom) - 1
+                ]
+                for j in dom:
+                    if j == 0:
+                        preamble[-1].append(f'{feat}<={self.enc.intvs[feat][j]:.3f}')
+                    elif len(self.enc.intvs[feat]) == 2 or j == len(self.enc.intvs[feat]) - 1:
+                        # binary
+                        preamble[-1].append(f'{feat}>{self.enc.intvs[feat][j - 1]:.3f}')
+                    else:
+                        preamble[-1].append('{1:.3f}<{0}<={2:.3f}'.format(
+                            feat,
+                            self.enc.intvs[feat][j - 1],
+                            self.enc.intvs[feat][j]
+                        ))
+            else:
+                dom = [int(self.enc.nameVar(p).split('_')[1]) for p in infx[i]]
+                assert len(self.enc.categories[feat]) - len(dom)
+                for j in dom:
+                    preamble[-1].append('{0}={1}'.format(feat, j))
+
+        rule = 'IF ({0}) THEN class={1}'.format(
+            ') AND ('.join([' OR '.join(f) for f in preamble]),
+            self.target_name[self.enc.target]
+        )
+        return preamble, rule
         
     def compute_axp(self, smallest=False):
         """
@@ -85,37 +122,19 @@ class Explainer(SATExplainer):
 
         expl = sorted([self.sel2fid[h] for h in self.assums if h>0 ]) # AXp
         assert len(expl)
+        self.explanation_indices = expl
+        self.interval_preamble, self.interval_explanation = self._build_interval_explanation(infx)
+        self.explanation_rule = self.interval_explanation
+        self.infxp_coverage = float(self.coverage(infx))
+        self.axp_domain_coverage = float(self.cov_axp(expl))
         
         if self.verbose:
             print("expl-selctors: ", expl)
-            preamble = []
-            for i in infx:
-                feat = f'f{i}'
-                preamble.append([])
-                if feat in self.enc.intvs:
-                    dom = sorted([int(self.enc.nameVar(p).split('_')[1][4:]) for p in infx[i]])
-                    assert (len(self.enc.intvs[feat]) - len(dom))
-                    dom = [dom[0]]+[dom[j] for j in range(1, len(dom)) if (dom[j] - dom[j-1] > 1) or j==len(dom)-1 ]
-                    for j in dom:
-                        if j == 0:
-                            preamble[-1].append(f'{feat}<={self.enc.intvs[feat][j]:.3f}')
-                        elif len(self.enc.intvs[feat]) == 2 or j == len(self.enc.intvs[feat]) - 1:
-                            # binary
-                            preamble[-1].append(f'{feat}>{self.enc.intvs[feat][j-1]:.3f}')
-                        else:
-                            preamble[-1].append('{1:.3f}<{0}<={2:.3f}'.format(feat, self.enc.intvs[feat][j-1], 
-                                                                              self.enc.intvs[feat][j]))
-                else:
-                    dom = [int(self.enc.nameVar(p).split('_')[1]) for p in infx[i]]
-                    assert len(self.enc.categories[feat]) - len(dom)
-                    for j in dom:
-                        preamble[-1].append('{0}={1}'.format(feat,j))
-                        
-            print('  expl: "IF ({0}) THEN class={1}"'.format(') AND ('.join([' OR '.join(f) for f in preamble]), 
-                                                          self.target_name[self.enc.target]))        
+            print('  expl: "{0}"'.format(self.interval_explanation))
             #preamble = [self.preamble[i] for i in expl]
             #print('  explanation: "IF {0} THEN class={1}"'.format(' AND '.join(preamble), self.target_name[self.enc.target]))
             print('  # hypos left:', len(expl))
+            print('  infxp coverage:', f'{self.infxp_coverage:.2f}')
             
         return expl
     
@@ -232,7 +251,7 @@ class INFXRF(XRF):
         
     
 
-    def explain(self, inst, xtype='abd', etype='sat', smallest=False):
+    def explain(self, inst, xtype='abd', etype='sat', smallest=False, sample_index=None):
         """
             Explain a prediction made for a given sample with a previously
             trained RF.
@@ -262,7 +281,7 @@ class INFXRF(XRF):
         if smallest:
             raise NotImplementedError()
             
-        expl = self.x.explain(np.array(inst), xtype, smallest)
+        expl = self.x.explain(np.array(inst), xtype, smallest, sample_index=sample_index)
 
         elapsed_time = get_time() - start_time
         

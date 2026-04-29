@@ -34,6 +34,35 @@ MCR/
 
 The `Classifiers-100-converted/` and `resources/` directories are in `.gitignore` because they contain large files.
 
+## Baseline Provenance
+
+The baseline code and converted Random Forest experiment assets are aligned
+with RFxpl:
+
+- RFxpl repository: <https://github.com/izzayacine/RFxpl/tree/main>
+- SAT-based RF explanations: Yacine Izza and Joao Marques-Silva,
+  "On Explaining Random Forests with SAT", IJCAI 2021,
+  <https://www.ijcai.org/proceedings/2021/356>
+- Inflated explanations used by the `infxp` backend: Yacine Izza, Alexey
+  Ignatiev, Peter J. Stuckey, and Joao Marques-Silva, "Delivering Inflated
+  Explanations", AAAI 2024, <https://doi.org/10.1609/aaai.v38i11.29170>
+- Related tree-ensemble MaxSAT baseline context: Alexey Ignatiev, Yacine Izza,
+  Peter J. Stuckey, and Joao Marques-Silva, "Using MaxSAT for Efficient
+  Explanations of Tree Ensembles", AAAI 2022,
+  <https://doi.org/10.1609/aaai.v36i4.20292>
+
+When baseline explanations are run in verbose mode, diagnostic PDFs are written
+to `results/plot_baseline/`. For the `infxp` backend these plots include the
+inflated interval rule, callouts on explanation features, and highlighted
+y-axis interval range bars for each numeric interval.
+
+The `infxp` JSON output also stores the backend coverage metric computed on
+each inflated explanation. Per-sample records include `infxp_coverage` and
+`axp_domain_coverage`; the experiment summary includes `infxp_coverages`,
+`avg_infxp_coverage`, `min_infxp_coverage`, `max_infxp_coverage`,
+`axp_domain_coverages`, `avg_axp_domain_coverage`,
+`min_axp_domain_coverage`, and `max_axp_domain_coverage`.
+
 ## Complete Setup - Step by Step
 
 ### 1. Extract datasets from resources.tar.gz

@@ -505,6 +505,21 @@ python run_experiments_baseline.py --from-converted --explainer infxp
 - Supports the default `xrf` backend and the inflated-explanation `infxp`
   backend from `baseline/infxp/Infxpl.py`
 
+**Baseline provenance:**
+
+- The baseline implementation under `baseline/` is derived from the RFxpl
+  project: <https://github.com/izzayacine/RFxpl/tree/main>
+- The `xrf` backend follows the SAT-based Random Forest explanation approach
+  from Izza and Marques-Silva, "On Explaining Random Forests with SAT",
+  IJCAI 2021: <https://www.ijcai.org/proceedings/2021/356>
+- The `infxp` backend is used for inflated explanations and follows the
+  related inflated-explanation work by Izza, Ignatiev, Stuckey, and
+  Marques-Silva, "Delivering Inflated Explanations", AAAI 2024:
+  <https://doi.org/10.1609/aaai.v38i11.29170>
+- Related tree-ensemble explanation context also includes "Using MaxSAT for
+  Efficient Explanations of Tree Ensembles", AAAI 2022:
+  <https://doi.org/10.1609/aaai.v36i4.20292>
+
 **Configuration:**
 
 - Modify grid parameters in script:
@@ -519,7 +534,29 @@ python run_experiments_baseline.py --from-converted --explainer infxp
 - Default `xrf` results in `baseline/resources/experiments/<dataset>/`
 - `infxp` results in `baseline/resources/experiments/infxp/<dataset>/`
 - JSON files with model metadata, accuracy, explanation times, explanation
-  lengths, and full explanations
+  lengths, and saved explanations
+- `explanation_indices` stores the raw feature-index AXp lists, for example
+  `[0, 1, 2, 3]`
+- `interval_explanations` stores the printable inflated interval rules produced
+  by `infxp`, for example
+  `IF (f0<=4.950 OR 4.950<f0<=5.000) AND (...) THEN class="Virginica"`
+- `full_explanations` stores one record per sample with `sample_index`,
+  `feature_indices`, `explanation_rule`, `interval_explanation`, and
+  `interval_terms`
+- For `infxp`, each saved explanation also includes `infxp_coverage`, computed
+  with the backend's inflated-explanation coverage metric; the aggregate JSON
+  stores `infxp_coverages`, `avg_infxp_coverage`, `min_infxp_coverage`, and
+  `max_infxp_coverage`
+- `axp_domain_coverage` and its aggregate fields are saved alongside it for
+  the domain-based coverage of the non-inflated AXp over the same selected
+  features
+- Verbose baseline plots are written to `results/plot_baseline/`; for `infxp`,
+  the PDF includes highlighted y-axis interval range bars on the explanation
+  features, interval callouts, and an `Inflated intervals` summary box
+- `coverage.ipynb` can recompute INFXP coverage and timing summaries directly
+  from `baseline/resources/experiments/infxp/`; it writes
+  `infxp_coverage_metrics.csv` and the compatibility copy
+  `baseline_coverage_metrics.csv`
 - Used as comparison baseline in analysis notebooks
 
 ### Monitoring Experiments
@@ -562,6 +599,8 @@ Primary analysis notebook with:
 Comparison between MCR and [AXp](https://arxiv.org/abs/2105.10278) explanation:
 
 - Coverage analysis
+- INFXP coverage recomputation from saved `baseline/resources/experiments/infxp/`
+  result JSON files
 - Sample-by-sample coverage growth
 - Convergence behavior per dataset
 - Worker efficiency trends

@@ -62,6 +62,20 @@ The default `xrf` output stays under
 under `baseline/resources/experiments/infxp/&lt;dataset&gt;/` so the two baselines
 do not overwrite each other.
 
+For `infxp`, the JSON output stores the inflated coverage metric computed by
+`coverage(infx)` for every explanation:
+
+- per-sample `infxp_coverage` and `axp_domain_coverage` inside
+  `full_explanations`
+- aggregate `infxp_coverages`, `avg_infxp_coverage`, `min_infxp_coverage`, and
+  `max_infxp_coverage`
+- matching `axp_domain_coverages`, `avg_axp_domain_coverage`,
+  `min_axp_domain_coverage`, and `max_axp_domain_coverage` fields for the
+  non-inflated AXp
+
+Verbose runs also save diagnostic PDFs in `results/plot_baseline/`; inflated
+intervals are drawn as highlighted y-axis ranges on the explanation features.
+
 
 ## Citations
 

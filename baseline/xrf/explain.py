@@ -145,85 +145,229 @@ class SATExplainer(object):
         if self.verbose:
             print('  time: {0:.3f}'.format(self.time))
             
-            # Plot and save explanation
-            import matplotlib.pyplot as plt
-            from pathlib import Path
-            import re
-            
-            # Create output directory
-            output_dir = Path('results/plot_baseline')
-            output_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Extract feature indices from explanation
-            feature_indices = sorted(expl)
-            
-            # Parse sample values from preamble
-            feature_values = {}
-            for condition in self.preamble:
-                # Parse conditions like "t_00 = 0.42518938"
-                match = re.match(r'(\w+)\s*=\s*([-+]?\d*\.?\d+)', condition)
-                if match:
-                    feat_name = match.group(1)
-                    feat_value = float(match.group(2))
-                    # Extract feature index
-                    if feat_name.startswith('t_'):
-                        feat_idx = int(feat_name.split('_')[1])
-                        feature_values[feat_idx] = feat_value
-            
-            # Create visualization with all features
-            fig, ax = plt.subplots(figsize=(14, 6))
-            
-            # Get all feature indices and values
-            all_indices = sorted(feature_values.keys())
-            all_values = [feature_values[i] for i in all_indices]
-            
-            # Plot the continuous line connecting all points
-            ax.plot(all_indices, all_values, '-', color='gray', linewidth=1.5, alpha=0.7, zorder=1)
-            
-            # Separate features into explanation and non-explanation for markers
-            non_expl_indices = [i for i in all_indices if i not in feature_indices]
-            non_expl_values = [feature_values[i] for i in non_expl_indices]
-            expl_values = [feature_values[i] for i in feature_indices if i in feature_values]
-            
-            # Plot non-explanation features as gray markers
-            ax.scatter(non_expl_indices, non_expl_values, color='lightgray', s=40,
-                      label=f'Not in explanation ({len(non_expl_indices)})', 
-                      edgecolors='gray', linewidths=0.5, zorder=2)
-            
-            # Plot explanation features as crimson markers
-            ax.scatter(feature_indices, expl_values, color='crimson', s=100,
-                      label=f'In explanation ({len(expl)})', 
-                      edgecolors='darkred', linewidths=1.5, zorder=3)
-            
-            ax.set_xlabel('Feature Index (Time Point)', fontsize=11)
-            ax.set_ylabel('Feature Value', fontsize=11)
-            
-            # Build title with sample index if available
-            title = f'Time Series with Explanation Features (Class: {self.target_name[self.enc.target]})'
-            if sample_index is not None:
-                title = f'Sample {sample_index} - {title}'
-            ax.set_title(title, fontsize=12, fontweight='bold')
-            
-            ax.grid(True, alpha=0.3)
-            ax.legend(loc='best')
-            
-            # Add coverage percentage
-            coverage = (len(all_indices)-len(expl)) / len(all_indices) * 100
-            ax.text(0.98, 0.95, f'Coverage: {len(expl)}/{len(all_indices)} features ({coverage:.1f}%)', 
-                    transform=ax.transAxes, ha='right', va='top',
-                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8), fontsize=10)
-            
-            plt.tight_layout()
-             
-            # Include sample index in filename if available
-            if sample_index is not None:
-                output_file = output_dir / f'baseline_explanation_sample_{sample_index}.pdf'
-            else:
-                output_file = output_dir / f'baseline_explanation.pdf'
-            
-            plt.savefig(output_file, bbox_inches='tight', dpi=150)
-            print(f"Explanation plot saved to {output_file}")
-            plt.close()
+            # Plot and save explanation. Plotting is diagnostic only; it should
+            # not turn a successfully computed explanation into a failed sample.
+            try:
+                import matplotlib.pyplot as plt
+                import numpy as np
+                import re
+                import textwrap
+                from pathlib import Path
+
+                # Create output directory
+                output_dir = Path('results/plot_baseline')
+                output_dir.mkdir(parents=True, exist_ok=True)
+
+                # Extract feature indices from explanation
+                feature_indices = sorted(expl)
+
+                # Use the sample vector directly. Parsing printed preamble text
+                # breaks for quoted or dotted names such as "sepal.length".
+                feature_values = {}
+                for feat_idx, feat_value in enumerate(np.asarray(sample).ravel()):
+                    try:
+                        feature_values[feat_idx] = float(feat_value)
+                    except (TypeError, ValueError):
+                        continue
+
+                # Create visualization with all numeric features
+                all_indices = sorted(feature_values.keys())
+                if not all_indices:
+                    raise ValueError('no numeric feature values available to plot')
+
+                fig, ax = plt.subplots(figsize=(14, 6))
+
+                # Get all feature indices and values
+                all_values = [feature_values[i] for i in all_indices]
+
+                # Plot the continuous line connecting all points
+                ax.plot(all_indices, all_values, '-', color='gray', linewidth=1.5, alpha=0.7, zorder=1)
+
+                # Separate features into explanation and non-explanation for markers
+                plotted_expl_indices = [i for i in feature_indices if i in feature_values]
+                non_expl_indices = [i for i in all_indices if i not in plotted_expl_indices]
+                non_expl_values = [feature_values[i] for i in non_expl_indices]
+                expl_values = [feature_values[i] for i in plotted_expl_indices]
+
+                # Plot non-explanation features as gray markers
+                ax.scatter(non_expl_indices, non_expl_values, color='lightgray', s=40,
+                          label=f'Not in explanation ({len(non_expl_indices)})',
+                          edgecolors='gray', linewidths=0.5, zorder=2)
+
+                # Plot explanation features as crimson markers
+                ax.scatter(plotted_expl_indices, expl_values, color='crimson', s=100,
+                          label=f'In explanation ({len(plotted_expl_indices)})',
+                          edgecolors='darkred', linewidths=1.5, zorder=3)
+
+                interval_terms = getattr(self, 'interval_preamble', None)
+                interval_labels = {}
+                interval_ranges = {}
+                if interval_terms:
+                    for feat_idx, terms in zip(feature_indices, interval_terms):
+                        if feat_idx in feature_values:
+                            interval_labels[feat_idx] = ' OR '.join(terms)
+                            interval_ranges[feat_idx] = []
+                            feat_name = f'f{feat_idx}'
+                            number = r'[-+]?(?:\d+(?:\.\d*)?|\.\d+)'
+                            for term in terms:
+                                compact_term = term.replace(' ', '')
+                                upper_match = re.match(rf'^{re.escape(feat_name)}<=({number})$', compact_term)
+                                lower_match = re.match(rf'^{re.escape(feat_name)}>({number})$', compact_term)
+                                bounded_match = re.match(
+                                    rf'^({number})<{re.escape(feat_name)}<=({number})$',
+                                    compact_term
+                                )
+                                if upper_match:
+                                    interval_ranges[feat_idx].append(
+                                        (float('-inf'), float(upper_match.group(1)), term)
+                                    )
+                                elif lower_match:
+                                    interval_ranges[feat_idx].append(
+                                        (float(lower_match.group(1)), float('inf'), term)
+                                    )
+                                elif bounded_match:
+                                    interval_ranges[feat_idx].append(
+                                        (float(bounded_match.group(1)), float(bounded_match.group(2)), term)
+                                    )
+
+                if interval_ranges:
+                    finite_y_values = list(all_values)
+                    for ranges in interval_ranges.values():
+                        for lower, upper, _ in ranges:
+                            if np.isfinite(lower):
+                                finite_y_values.append(lower)
+                            if np.isfinite(upper):
+                                finite_y_values.append(upper)
+
+                    y_min = min(finite_y_values)
+                    y_max = max(finite_y_values)
+                    y_margin = max((y_max - y_min) * 0.12, 0.1)
+                    plot_y_min = y_min - y_margin
+                    plot_y_max = y_max + y_margin
+                    ax.set_ylim(plot_y_min, plot_y_max)
+
+                    range_label_added = False
+                    cap_half_width = 0.16
+                    for feat_idx in plotted_expl_indices:
+                        for lower, upper, _ in interval_ranges.get(feat_idx, []):
+                            plot_lower = plot_y_min if not np.isfinite(lower) else lower
+                            plot_upper = plot_y_max if not np.isfinite(upper) else upper
+                            if plot_upper < plot_lower:
+                                plot_lower, plot_upper = plot_upper, plot_lower
+
+                            ax.vlines(
+                                feat_idx,
+                                plot_lower,
+                                plot_upper,
+                                color='gold',
+                                linewidth=14,
+                                alpha=0.32,
+                                zorder=2.35,
+                                label='Inflated interval range' if not range_label_added else None,
+                            )
+                            ax.vlines(
+                                feat_idx,
+                                plot_lower,
+                                plot_upper,
+                                color='darkorange',
+                                linewidth=2.2,
+                                alpha=0.85,
+                                zorder=2.45,
+                            )
+                            range_label_added = True
+
+                            if np.isfinite(lower):
+                                ax.hlines(
+                                    lower,
+                                    feat_idx - cap_half_width,
+                                    feat_idx + cap_half_width,
+                                    color='darkorange',
+                                    linewidth=2.2,
+                                    zorder=2.5,
+                                )
+                            if np.isfinite(upper):
+                                ax.hlines(
+                                    upper,
+                                    feat_idx - cap_half_width,
+                                    feat_idx + cap_half_width,
+                                    color='darkorange',
+                                    linewidth=2.2,
+                                    zorder=2.5,
+                                )
+
+                for offset_num, feat_idx in enumerate(plotted_expl_indices):
+                    label = interval_labels.get(feat_idx)
+                    if not label:
+                        continue
+                    wrapped_label = '\n'.join(textwrap.wrap(label, width=30))
+                    ax.annotate(
+                        wrapped_label,
+                        xy=(feat_idx, feature_values[feat_idx]),
+                        xytext=(0, 22 + (offset_num % 3) * 18),
+                        textcoords='offset points',
+                        ha='center',
+                        va='bottom',
+                        fontsize=8,
+                        bbox=dict(boxstyle='round,pad=0.25', facecolor='white', edgecolor='darkred', alpha=0.9),
+                        arrowprops=dict(arrowstyle='->', color='darkred', linewidth=0.8),
+                        zorder=4,
+                    )
+
+                ax.set_xlabel('Feature Index', fontsize=11)
+                ax.set_ylabel('Feature Value', fontsize=11)
+
+                # Build title with sample index if available
+                title = f'Sample Features with Explanation Markers (Class: {self.target_name[self.enc.target]})'
+                if sample_index is not None:
+                    title = f'Sample {sample_index} - {title}'
+                ax.set_title(title, fontsize=12, fontweight='bold')
+
+                ax.grid(True, alpha=0.3)
+                ax.legend(loc='best')
+
+                # Add explanation percentage
+                explanation_pct = len(plotted_expl_indices) / len(all_indices) * 100
+                ax.text(0.98, 0.95,
+                        f'Explanation: {len(plotted_expl_indices)}/{len(all_indices)} features ({explanation_pct:.1f}%)',
+                        transform=ax.transAxes, ha='right', va='top',
+                        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8), fontsize=10)
+
+                if interval_labels:
+                    interval_lines = []
+                    for feat_idx in plotted_expl_indices:
+                        label = interval_labels.get(feat_idx)
+                        if not label:
+                            continue
+                        line = f'f{feat_idx}: {label}'
+                        interval_lines.extend(textwrap.wrap(line, width=115))
+
+                    footer_text = 'Inflated intervals:\n' + '\n'.join(interval_lines)
+                    footer_height = min(0.36, 0.10 + 0.022 * len(interval_lines))
+                    fig.text(
+                        0.01,
+                        0.02,
+                        footer_text,
+                        ha='left',
+                        va='bottom',
+                        fontsize=8,
+                        family='monospace',
+                        bbox=dict(boxstyle='round,pad=0.4', facecolor='white', edgecolor='gray', alpha=0.92),
+                    )
+                    plt.tight_layout(rect=(0, footer_height, 1, 1))
+                else:
+                    plt.tight_layout()
+
+                # Include sample index in filename if available
+                if sample_index is not None:
+                    output_file = output_dir / f'baseline_explanation_sample_{sample_index}.pdf'
+                else:
+                    output_file = output_dir / f'baseline_explanation.pdf'
+
+                plt.savefig(output_file, bbox_inches='tight', dpi=150)
+                print(f"Explanation plot saved to {output_file}")
+                plt.close()
+            except Exception as plot_error:
+                print(f"Warning: could not save explanation plot: {plot_error}")
 
         return expl    
 
